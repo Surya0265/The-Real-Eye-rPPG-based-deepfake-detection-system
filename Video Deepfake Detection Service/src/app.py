@@ -81,7 +81,7 @@ def upload_video():
 
     video = request.files['video']
     video_path = os.path.join('Video Deepfake Detection Service','videos', video.filename)
-    video_name = video.filename;
+    video_name = video.filename
     video.save(video_path)
 
     print(video_name)
