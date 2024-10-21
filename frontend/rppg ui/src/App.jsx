@@ -7,6 +7,7 @@ function App() {
   const [message, setMessage] = useState("");
   const [progress, setProgress] = useState(0);
   const [classification, setClassification] = useState("");
+  const [isUploading, setIsUploading] = useState(false); // Control visibility
 
   const handleFileChange = (e) => {
     setFile(e.target.files[0]);
@@ -26,20 +27,36 @@ function App() {
 
     try {
       setMessage("Uploading video...");
+      setIsUploading(true); // Show progress and content container
       setProgress(1); // Start progress
 
+      // Simulate actual upload process (update to 100)
+      setTimeout(() => {
+        setProgress(25);
+      }, 1000); // Update after 1 second
+      setTimeout(() => {
+        setProgress(50);
+      }, 2000); // Update after 2 seconds
+      setTimeout(() => {
+        setProgress(75);
+      }, 3000); // Update after 3 seconds
+      setTimeout(() => {
+        setProgress(100);
+      }, 4000); // Update to 100 after 4 seconds
+
+      // Mocking the API call for upload
       const response = await axios.post("http://localhost:5000/upload", formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
       });
 
-      setProgress(100); // Completed
       setMessage("Upload complete!");
       setClassification(`Video Classification: ${response.data.classification}`);
     } catch (error) {
       setMessage("Error uploading video.");
       setProgress(0);
+      setIsUploading(false); // Hide progress and content container if upload fails
       console.error("There was an error!", error);
     }
   };
@@ -85,57 +102,78 @@ function App() {
 
   return (
     <div className="App">
-      <h1>Deepfake Detection</h1>
-      <input type="file" onChange={handleFileChange} accept="video/*" />
+      {/* Header */}
+      <header className="header">
+        <h1>The Real Eye</h1>
+      </header>
+
+      <div className="file-container">
+        <label htmlFor="file-upload">
+          Choose File to be checked 📷
+          <input type="file" id="file-upload" onChange={handleFileChange} accept="video/*" />
+        </label>
+      </div>
+
       <button onClick={handleUpload}>Upload Video</button>
+
       <p>{message}</p>
-      <div className="process-wrapper">
-        <div id="progress-bar-container">
-          <ul>
-            <li
-              className={`step step01 ${progress >= 1 ? "active" : ""}`}
-              onClick={() => updateProgressBar(1)}
-            >
-              <div className="step-inner">Upload Started</div>
-            </li>
-            <li
-              className={`step step02 ${progress >= 25 ? "active" : ""}`}
-              onClick={() => updateProgressBar(2)}
-            >
-              <div className="step-inner">Processing Frames</div>
-            </li>
-            <li
-              className={`step step03 ${progress >= 50 ? "active" : ""}`}
-              onClick={() => updateProgressBar(3)}
-            >
-              <div className="step-inner">Deepfake Detection</div>
-            </li>
-            <li
-              className={`step step04 ${progress >= 75 ? "active" : ""}`}
-              onClick={() => updateProgressBar(4)}
-            >
-              <div className="step-inner">Finalizing</div>
-            </li>
-            <li
-              className={`step step05 ${progress >= 100 ? "active" : ""}`}
-              onClick={() => updateProgressBar(5)}
-            >
-              <div className="step-inner">Complete</div>
-            </li>
-          </ul>
-          <div id="line">
-            <div id="line-progress" style={{ width: `${progress}%` }}></div>
+
+      {/* Show progress and content container after upload starts and keep it visible */}
+      {(isUploading || progress > 0) && (
+        <>
+          <div className="process-wrapper">
+            <div id="progress-bar-container">
+              <ul>
+                <li
+                  className={`step step01 ${progress >= 1 ? "active" : ""}`}
+                  onClick={() => updateProgressBar(1)}
+                >
+                  <div className="step-inner">Upload Started</div>
+                </li>
+                <li
+                  className={`step step02 ${progress >= 25 ? "active" : ""}`}
+                  onClick={() => updateProgressBar(2)}
+                >
+                  <div className="step-inner">Processing Frames</div>
+                </li>
+                <li
+                  className={`step step03 ${progress >= 50 ? "active" : ""}`}
+                  onClick={() => updateProgressBar(3)}
+                >
+                  <div className="step-inner">Deepfake Detection</div>
+                </li>
+                <li
+                  className={`step step04 ${progress >= 75 ? "active" : ""}`}
+                  onClick={() => updateProgressBar(4)}
+                >
+                  <div className="step-inner">Finalizing</div>
+                </li>
+                <li
+                  className={`step step05 ${progress >= 100 ? "active" : ""}`}
+                  onClick={() => updateProgressBar(5)}
+                >
+                  <div className="step-inner">Complete</div>
+                </li>
+              </ul>
+              <div id="line">
+                <div id="line-progress" style={{ width: `${progress}%` }}></div>
+              </div>
+            </div>
           </div>
-        </div>
-      </div>
-      <div className="content-container">
-        <p>{getProgressContent()}</p>
-      </div>
+
+          <div className="content-container">
+            <p>{getProgressContent()}</p>
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
 export default App;
+
+
+
 
 
 
