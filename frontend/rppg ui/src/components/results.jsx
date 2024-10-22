@@ -1,55 +1,75 @@
-import React, { useState, useEffect } from "react";
-import axios from "axios";
-import "./results.css"; // Custom CSS for styling
+import React from 'react';
 
-function Result() {
-  const [classification, setClassification] = useState("");
-  const [plotImage, setPlotImage] = useState("");
-
-  useEffect(() => {
-    // Simulating an API call to the backend to fetch classification and image
-    const fetchData = async () => {
-      try {
-        const response = await axios.get("http://localhost:5000/result");
-        
-        // Assuming the backend sends classification and plot_image in the response
-        setClassification(response.data.classification);
-        setPlotImage(response.data.plot_image); // base64 image string from backend
-      } catch (error) {
-        console.error("Error fetching data from backend", error);
-      }
-    };
-
-    fetchData();
-  }, []); // Runs only on component mount
+const ClassificationDisplay = () => {
+  // Sample data - replace with your actual data
+  const data = {
+    classification: "Not Deepfake",
+    plot_image: "iVBORw0KGgoAAAANSUhEUgAAA..." // your base64 string
+  };
 
   return (
-    <div className="App">
-      <header className="header">
-        <h1 className="title">The Real Eye</h1>
-      </header>
-
-      <div className="container">
-        <h2 className="result-heading">Result Analysis</h2>
-        <div className="result-card">
-          <h3 className="classification">
-            Classification: {classification || "Loading..."}
-          </h3>
-
-          {/* Render the image only if it's available */}
-          {plotImage ? (
+    <div className="min-h-screen bg-gradient-to-br from-purple-900 to-blue-900 p-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-4xl font-bold text-center text-white mb-8">
+          Image Analysis Results
+        </h1>
+        
+        <div className="bg-white rounded-lg shadow-xl overflow-hidden">
+          {/* Image Section */}
+          <div className="p-6">
             <img
-              className="result-image"
-              src={`data:image/png;base64,${plotImage}`}
-              alt="Plot Analysis"
+              src={`data:image/png;base64,${data.plot_image}`}
+              alt="Classification Plot"
+              className="w-full h-auto rounded-lg shadow-lg hover:scale-105 transition-transform duration-300"
             />
-          ) : (
-            <p>Loading image...</p>
-          )}
+          </div>
+
+          {/* Result Section */}
+          <div className="p-6 border-t border-gray-200">
+            <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+              Classification Result
+            </h2>
+            
+            <div className={`inline-block px-4 py-2 rounded-full text-white font-medium ${
+              data.classification === "Not Deepfake" 
+                ? "bg-green-500" 
+                : "bg-red-500"
+            }`}>
+              {data.classification}
+            </div>
+
+            {/* Analysis Details */}
+            <div className="mt-6 space-y-4">
+              <h3 className="text-xl font-medium text-gray-700">
+                Analysis Details
+              </h3>
+              
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <h4 className="font-medium text-gray-700 mb-2">Confidence Score</h4>
+                <div className="w-full h-2 bg-gray-200 rounded-full">
+                  <div className="h-full w-4/5 bg-blue-500 rounded-full" />
+                </div>
+              </div>
+
+              <div className="p-4 bg-gray-50 rounded-lg">
+                <p className="text-gray-600">
+                  This analysis was performed using advanced machine learning techniques
+                  to detect potential image manipulations.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="px-6 py-4 bg-gray-50 border-t border-gray-200">
+            <button className="w-full px-4 py-2 bg-blue-500 text-white rounded-lg font-medium hover:bg-blue-600 transition-colors duration-300">
+              Download Report
+            </button>
+          </div>
         </div>
       </div>
     </div>
   );
-}
+};
 
-export default Result;
+export default ClassificationDisplay;

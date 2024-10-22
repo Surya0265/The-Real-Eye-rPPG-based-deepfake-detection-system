@@ -1,175 +1,326 @@
-import React, { useState } from "react";
-import axios from "axios";
-import "./fileupload.css";
-import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import React, { useState, useRef, useEffect } from 'react';
+import { Upload, AlertCircle, CheckCircle, FileVideo, Activity } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import './fileupload.css'
+const ParticleBackground = () => {
+  const canvasRef = useRef(null);
 
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    let animationFrameId;
 
-function FileUpload() {
+    const resizeCanvas = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    // Initialize particles
+    const initParticles = () => {
+      particles = [];
+      for (let i = 0; i < 100; i++) {
+        particles.push({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height,
+          radius: Math.random() * 2 + 1,
+          vx: Math.random() * 2 - 1,
+          vy: Math.random() * 2 - 1,
+          alpha: Math.random() * 0.5 + 0.5,
+        });
+      }
+    };
+
+    // Animation loop
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      particles.forEach((particle) => {
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+
+        if (particle.x < 0 || particle.x > canvas.width) particle.vx *= -1;
+        if (particle.y < 0 || particle.y > canvas.height) particle.vy *= -1;
+
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(255, 255, 255, ${particle.alpha})`;
+        ctx.fill();
+      });
+
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    resizeCanvas();
+    initParticles();
+    animate();
+
+    window.addEventListener('resize', () => {
+      resizeCanvas();
+      initParticles();
+    });
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      window.removeEventListener('resize', resizeCanvas);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="fixed top-0 left-0 w-full h-full pointer-events-none"
+      style={{ opacity: 0.3 }}
+    />
+  );
+};
+
+const FloatingCard = ({ children, delay = 0 }) => {
+  return (
+    <motion.div
+      initial={{ y: 20, opacity: 0 }}
+      animate={{ y: 0, opacity: 1 }}
+      transition={{
+        type: 'spring',
+        stiffness: 100,
+        damping: 20,
+        delay,
+      }}
+      whileHover={{
+        y: -5,
+        scale: 1.02,
+        rotateX: 10,
+        rotateY: 5,
+        transition: { duration: 0.3 },
+      }}
+      style={{
+        transformStyle: 'preserve-3d',
+        perspective: '1000px',
+      }}
+    >
+      {children}
+    </motion.div>
+  );
+};
+
+const ProgressBar = ({ progress }) => {
+  return (
+    <div className="w-full h-2 bg-gray-700 rounded-full overflow-hidden">
+      <motion.div
+        className="h-full bg-blue-500"
+        initial={{ width: 0 }}
+        animate={{ width: `${progress}%` }}
+        transition={{ duration: 0.5 }}
+      />
+    </div>
+  );
+};
+
+const DeepfakeDetector = () => {
   const [file, setFile] = useState(null);
-  const [message, setMessage] = useState("");
-  const [progress, setProgress] = useState(0);
-  const [classification, setClassification] = useState("");
-  const [isUploading, setIsUploading] = useState(false); // Control visibility
+  const [isDragging, setIsDragging] = useState(false);
+  const [results, setResults] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef(null);
 
-  const handleFileChange = (e) => {
-    setFile(e.target.files[0]);
-    setMessage("");
-    setProgress(0);
-    setClassification("");
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setIsDragging(true);
+  };
+
+  const handleDragLeave = () => {
+    setIsDragging(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setIsDragging(false);
+    const droppedFile = e.dataTransfer.files[0];
+    if (droppedFile && droppedFile.type.startsWith('video/')) {
+      setFile(droppedFile);
+      animateUpload();
+    }
+  };
+
+  const handleFileSelect = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      setFile(selectedFile);
+      animateUpload();
+    }
+  };
+
+  const animateUpload = () => {
+    setUploadProgress(0);
+    const interval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          return 100;
+        }
+        return prev + 1;
+      });
+    }, 50);
   };
 
   const handleUpload = async () => {
-    if (!file) {
-      setMessage("Please select a video file to upload.");
-      return;
-    }
+    if (!file) return;
+
+    setLoading(true);
+    setError(null);
 
     const formData = new FormData();
-    formData.append("video", file);
+    formData.append('video', file);
 
     try {
-      setMessage("Uploading video...");
-      setIsUploading(true); // Show progress and content container
-      setProgress(1); // Start progress
-
-      // Simulate actual upload process (update to 100)
-      setTimeout(() => {
-        setProgress(25);
-      }, 1000); // Update after 1 second
-      setTimeout(() => {
-        setProgress(50);
-      }, 2000); // Update after 2 seconds
-      setTimeout(() => {
-        setProgress(75);
-      }, 3000); // Update after 3 seconds
-      setTimeout(() => {
-        setProgress(100);
-      }, 4000); // Update to 100 after 4 seconds
-
-      // Mocking the API call for upload
-      const response = await axios.post("http://localhost:5000/upload", formData, {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
+      const response = await fetch('http://localhost:5000/upload', {
+        method: 'POST',
+        body: formData,
       });
 
-      setMessage("Upload complete!");
-      setClassification(`Video Classification: ${response.data.classification}`);
-    } catch (error) {
-      setMessage("Error uploading video.");
-      setProgress(0);
-      setIsUploading(false); // Hide progress and content container if upload fails
-      console.error("There was an error!", error);
-    }
-  };
+      if (!response.ok) throw new Error('Upload failed');
 
-  const getProgressContent = () => {
-    switch (true) {
-      case progress >= 1 && progress < 25:
-        return "Preparing to upload the video...";
-      case progress >= 25 && progress < 50:
-        return "Processing video frames for analysis...";
-      case progress >= 50 && progress < 75:
-        return "Running deepfake detection algorithms...";
-      case progress >= 75 && progress < 100:
-        return "Finalizing the analysis...";
-      case progress === 100:
-        return classification;
-      default:
-        return "Please start by uploading a video file.";
-    }
-  };
-
-  const updateProgressBar = (step) => {
-    switch (step) {
-      case 1:
-        setProgress(1);
-        break;
-      case 2:
-        setProgress(25);
-        break;
-      case 3:
-        setProgress(50);
-        break;
-      case 4:
-        setProgress(75);
-        break;
-      case 5:
-        setProgress(100);
-        break;
-      default:
-        setProgress(0);
+      const data = await response.json();
+      setResults(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="App">
-      {/* Header */}
-      <header className="header">
-        <h1>The Real Eye</h1>
-      </header>
+    <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 p-8 relative overflow-hidden">
+      {/* Particle Background */}
+      <ParticleBackground />
 
-      <div className="file-container">
-        <label htmlFor="file-upload">
-          Choose File to be checked 📷
-          <input type="file" id="file-upload" onChange={handleFileChange} accept="video/*" />
-        </label>
-      </div>
+      {/* Content */}
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto relative">
+        <motion.h1
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{
+            type: 'spring',
+            stiffness: 100,
+            delay: 0.2,
+          }}
+          className="text-5xl font-bold text-white text-center mb-12"
+        >
+          THE REAL EYE 
+          
+        </motion.h1>
+        <motion.h1
+          initial={{ scale: 0.5, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          transition={{
+            type: 'spring',
+            stiffness: 100,
+            delay: 0.2,
+          }}
+          className="text-5xl font-bold text-white text-center mb-12"
+        >
+          DEEPFAKE DETECTION SYSYTEM 
+          
+        </motion.h1>
 
-      <button onClick={handleUpload}>Upload Video</button>
+        <FloatingCard>
+          <motion.div
+            className={`p-8 rounded-lg bg-white/10 backdrop-blur-lg border-2 border-dashed 
+              ${isDragging ? 'border-blue-400' : 'border-gray-400'} 
+              transition-all duration-300 cursor-pointer hover:border-blue-400
+              shadow-[0_0_15px_rgba(59,130,246,0.5)]`}
+            whileHover={{
+              boxShadow: '0 0 25px rgba(59,130,246,0.7)',
+            }}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              accept="video/*"
+              className="hidden"
+            />
 
-      <p>{message}</p>
-
-      {/* Show progress and content container after upload starts and keep it visible */}
-      {(isUploading || progress > 0) && (
-        <>
-          <div className="process-wrapper">
-            <div id="progress-bar-container">
-              <ul>
-                <li
-                  className={`step step01 ${progress >= 1 ? "active" : ""}`}
-                  onClick={() => updateProgressBar(1)}
-                >
-                  <div className="step-inner">Upload Started</div>
-                </li>
-                <li
-                  className={`step step02 ${progress >= 25 ? "active" : ""}`}
-                  onClick={() => updateProgressBar(2)}
-                >
-                  <div className="step-inner">Processing Frames</div>
-                </li>
-                <li
-                  className={`step step03 ${progress >= 50 ? "active" : ""}`}
-                  onClick={() => updateProgressBar(3)}
-                >
-                  <div className="step-inner">Deepfake Detection</div>
-                </li>
-                <li
-                  className={`step step04 ${progress >= 75 ? "active" : ""}`}
-                  onClick={() => updateProgressBar(4)}
-                >
-                  <div className="step-inner">Finalizing</div>
-                </li>
-                <li
-                  className={`step step05 ${progress >= 100 ? "active" : ""}`}
-                  onClick={() => updateProgressBar(5)}
-                >
-                  <div className="step-inner">Complete</div>
-                </li>
-              </ul>
-              <div id="line">
-                <div id="line-progress" style={{ width: `${progress}%` }}></div>
-              </div>
+            <div className="text-center">
+              <motion.div
+                animate={{
+                  scale: isDragging ? 1.1 : 1,
+                  rotateZ: isDragging ? [0, -10, 10, 0] : 0,
+                }}
+                transition={{
+                  duration: 0.5,
+                  repeat: isDragging ? Infinity : 0,
+                }}
+                className="inline-block p-4 rounded-full bg-white/20 mb-4"
+              >
+                <Upload className="w-8 h-8 text-white" />
+              </motion.div>
+              <p className="text-white text-lg mb-2">{file ? file.name : 'Drop your video here or click to browse'}</p>
+              <p className="text-gray-300 text-sm">Supports MP4, AVI, MOV formats</p>
             </div>
-          </div>
 
-          <div className="content-container">
-            <p>{getProgressContent()}</p>
+            {file && <ProgressBar progress={uploadProgress} />}
+          </motion.div>
+        </FloatingCard>
+
+        {results && !loading && (
+          <div className="mt-8 text-center text-white">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5 }}
+            >
+              {results.isDeepfake ? (
+                <div className="flex justify-center items-center text-red-500">
+                  <AlertCircle className="w-10 h-10 mr-2" />
+                  <span>Deepfake Detected!</span>
+                </div>
+              ) : (
+                <div className="flex justify-center items-center text-green-500">
+                  <CheckCircle className="w-10 h-10 mr-2" />
+                  <span>Video is Authentic!</span>
+                </div>
+              )}
+            </motion.div>
           </div>
-        </>
-      )}
+        )}
+
+        {loading && (
+          <div className="mt-8 text-center text-white">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="flex justify-center items-center text-blue-500"
+            >
+              <Activity className="w-8 h-8 mr-2 animate-spin" />
+              <span>Analyzing video...</span>
+            </motion.div>
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-8 text-center text-white">
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="flex justify-center items-center text-red-500"
+            >
+              <AlertCircle className="w-8 h-8 mr-2" />
+              <span>{error}</span>
+            </motion.div>
+          </div>
+        )}
+      </motion.div>
     </div>
   );
-}
+};
 
-export default FileUpload;
+export default DeepfakeDetector;
