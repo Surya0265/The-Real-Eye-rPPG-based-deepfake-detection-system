@@ -183,8 +183,13 @@ const DeepfakeDetector = () => {
       if (!response.ok) throw new Error('Upload failed');
 
       const data = await response.json();
-      setResults(data);
-    } catch (err) {
+      setResults({
+        video: data.video,
+        classification: data.classification,
+        prediction: data.prediction,
+        plotImage: data.plot_image,
+      });
+    } catch (err) { 
       setError(err.message);
     } finally {
       setLoading(false);
@@ -270,40 +275,34 @@ const DeepfakeDetector = () => {
         </FloatingCard>
 
         {results && !loading && (
-          <div className="mt-8 text-center text-white">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5 }}
-            >
-              {results.isDeepfake ? (
-                <div className="flex justify-center items-center text-red-500">
-                  <AlertCircle className="w-10 h-10 mr-2" />
-                  <span>Deepfake Detected!</span>
-                </div>
-              ) : (
-                <div className="flex justify-center items-center text-green-500">
-                  <CheckCircle className="w-10 h-10 mr-2" />
-                  <span>Video is Authentic!</span>
-                </div>
-              )}
-            </motion.div>
-          </div>
-        )}
-
-        {loading && (
-          <div className="mt-8 text-center text-white">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5 }}
-              className="flex justify-center items-center text-blue-500"
-            >
-              <Activity className="w-8 h-8 mr-2 animate-spin" />
-              <span>Analyzing video...</span>
-            </motion.div>
-          </div>
-        )}
+  <div className="mt-8 text-center text-white">
+    <motion.div
+      initial={{ scale: 0.9, opacity: 0 }}
+      animate={{ scale: 1, opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      {results.classification === "Deepfake" ? (
+        <div className="flex justify-center items-center text-red-500">
+          <AlertCircle className="w-10 h-10 mr-2" />
+          <span>Deepfake Detected! Score: {results.prediction}</span>
+        </div>
+      ) : (
+        <div className="flex justify-center items-center text-green-500">
+          <CheckCircle className="w-10 h-10 mr-2" />
+          <span>Video is Authentic! Score: {results.prediction}</span>
+        </div>
+      )}
+      {/* Display plot image if available */}
+      {results.plotImage && (
+        <img
+          src={`data:image/png;base64,${results.plotImage}`}
+          alt="Analysis plot"
+          className="mt-4 mx-auto"
+        />
+      )}
+    </motion.div>
+  </div>
+)}
 
         {error && (
           <div className="mt-8 text-center text-white">
