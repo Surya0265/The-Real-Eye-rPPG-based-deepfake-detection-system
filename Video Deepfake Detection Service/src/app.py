@@ -1,7 +1,10 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_file
 from flask_cors import CORS
 import os
 import shutil
+import io
+import base64
+import matplotlib.pyplot as plt
 from vid_to_deepframes_rawframes import vid_to_frames_rawframes
 from DeepFakesON_Phys_extract_predictions import predict_deepfake
 from collections import defaultdict
@@ -46,8 +49,11 @@ def classify_video_by_frames(file_path, min_score_threshold, ratio_threshold=0.5
         else:
             classification = "Deepfake"
 
-        # Append the result (video name and classification)
-        video_classification.append((video, classification))
+        # Calculate the combined score (e.g., average score)
+        combined_score = sum(scores) / total_frames
+
+        # Append the result (video name, classification, and combined score)
+        video_classification.append((video, classification, combined_score, scores))
 
     return video_classification
 
@@ -102,9 +108,37 @@ def upload_video():
         # Clean up by deleting the video and its preprocessed frames
         cleanup_video_and_frames(video_name)
 
-        # Return the classification for each video
-        for video, classification in classified_videos:
-            return jsonify({"video": video, "classification": classification})
+        # Prepare the response data
+        response_data = []
+
+        for video, classification, combined_score, scores in classified_videos:
+            # Plot the results
+            plt.figure(figsize=(10, 6))
+            plt.plot(range(len(scores)), scores, marker='o', linestyle='-', color='b')
+            plt.axhline(y=min_score, color='r', linestyle='--', label='Threshold')
+            plt.xlabel('Frame Number')
+            plt.ylabel('Prediction Score')
+            plt.title(f'Frame Scores for {video}')
+            plt.legend()
+
+            # Save the plot to a BytesIO object
+            img_io = io.BytesIO()
+            plt.savefig(img_io, format='png')
+            img_io.seek(0)
+            plt.close()
+
+            # Encode the image to base64
+            img_base64 = base64.b64encode(img_io.getvalue()).decode('utf-8')
+
+            # Append the result to the response data
+            response_data.append({
+                "video": video,
+                "classification": classification,
+                "prediction": combined_score,
+                "plot_image": img_base64
+            })
+
+        return jsonify(response_data)
 
     except Exception as e:
         return jsonify({"error": str(e)}), 500
@@ -114,4 +148,4 @@ if __name__ == "__main__":
         os.makedirs('Video Deepfake Detection Service/videos')
         os.makedirs('Video Deepfake Detection Service/videos/DeepFrames')
         os.makedirs('Video Deepfake Detection Service/videos/RawFrames')
-    app.run(debug=True,host='0.0.0.0',port=5000)
+    app.run(debug=True, host='0.0.0.0', port=5000)
