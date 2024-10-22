@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Upload, AlertCircle, CheckCircle, FileVideo, Activity } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
-import './fileupload.css'
+import { Upload, AlertCircle, CheckCircle } from 'lucide-react';
+import { motion } from 'framer-motion';
+import './fileupload.css';
+
 const ParticleBackground = () => {
   const canvasRef = useRef(null);
 
@@ -16,7 +17,6 @@ const ParticleBackground = () => {
       canvas.height = window.innerHeight;
     };
 
-    // Initialize particles
     const initParticles = () => {
       particles = [];
       for (let i = 0; i < 100; i++) {
@@ -31,7 +31,6 @@ const ParticleBackground = () => {
       }
     };
 
-    // Animation loop
     const animate = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
@@ -75,17 +74,12 @@ const ParticleBackground = () => {
   );
 };
 
-const FloatingCard = ({ children, delay = 0 }) => {
+const FloatingCard = ({ children }) => {
   return (
     <motion.div
       initial={{ y: 20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
-      transition={{
-        type: 'spring',
-        stiffness: 100,
-        damping: 20,
-        delay,
-      }}
+      transition={{ type: 'spring', stiffness: 100, damping: 20 }}
       whileHover={{
         y: -5,
         scale: 1.02,
@@ -141,6 +135,7 @@ const DeepfakeDetector = () => {
     if (droppedFile && droppedFile.type.startsWith('video/')) {
       setFile(droppedFile);
       animateUpload();
+      handleUpload(droppedFile); // Trigger upload on drop
     }
   };
 
@@ -149,6 +144,7 @@ const DeepfakeDetector = () => {
     if (selectedFile) {
       setFile(selectedFile);
       animateUpload();
+      handleUpload(selectedFile); // Trigger upload on file selection
     }
   };
 
@@ -165,14 +161,14 @@ const DeepfakeDetector = () => {
     }, 50);
   };
 
-  const handleUpload = async () => {
-    if (!file) return;
+  const handleUpload = async (selectedFile) => {
+    if (!selectedFile) return;
 
     setLoading(true);
     setError(null);
 
     const formData = new FormData();
-    formData.append('video', file);
+    formData.append('video', selectedFile);
 
     try {
       const response = await fetch('http://localhost:5000/upload', {
@@ -183,13 +179,17 @@ const DeepfakeDetector = () => {
       if (!response.ok) throw new Error('Upload failed');
 
       const data = await response.json();
+      console.log('Response Data:', data);
       setResults({
-        video: data.video,
-        classification: data.classification,
-        prediction: data.prediction,
-        plotImage: data.plot_image,
+        classification: data[0].classification,
+        plotImage: data[0].plot_image,
+        prediction: data[0].prediction,
+        video: data[0].video,
+        
+        
+       
       });
-    } catch (err) { 
+    } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
@@ -198,36 +198,23 @@ const DeepfakeDetector = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-900 via-purple-900 to-indigo-900 p-8 relative overflow-hidden">
-      {/* Particle Background */}
       <ParticleBackground />
-
-      {/* Content */}
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="max-w-4xl mx-auto relative">
         <motion.h1
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{
-            type: 'spring',
-            stiffness: 100,
-            delay: 0.2,
-          }}
+          transition={{ type: 'spring', stiffness: 100, delay: 0.2 }}
           className="text-5xl font-bold text-white text-center mb-12"
         >
-          THE REAL EYE 
-          
+          THE REAL EYE
         </motion.h1>
         <motion.h1
           initial={{ scale: 0.5, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
-          transition={{
-            type: 'spring',
-            stiffness: 100,
-            delay: 0.2,
-          }}
+          transition={{ type: 'spring', stiffness: 100, delay: 0.2 }}
           className="text-5xl font-bold text-white text-center mb-12"
         >
-          DEEPFAKE DETECTION SYSYTEM 
-          
+          DEEPFAKE DETECTION SYSTEM
         </motion.h1>
 
         <FloatingCard>
@@ -236,22 +223,19 @@ const DeepfakeDetector = () => {
               ${isDragging ? 'border-blue-400' : 'border-gray-400'} 
               transition-all duration-300 cursor-pointer hover:border-blue-400
               shadow-[0_0_15px_rgba(59,130,246,0.5)]`}
-            whileHover={{
-              boxShadow: '0 0 25px rgba(59,130,246,0.7)',
-            }}
+            whileHover={{ boxShadow: '0 0 25px rgba(59,130,246,0.7)' }}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
           >
-            <input
+            <input 
               type="file"
               ref={fileInputRef}
               onChange={handleFileSelect}
               accept="video/*"
               className="hidden"
             />
-
             <div className="text-center">
               <motion.div
                 animate={{
@@ -269,52 +253,29 @@ const DeepfakeDetector = () => {
               <p className="text-white text-lg mb-2">{file ? file.name : 'Drop your video here or click to browse'}</p>
               <p className="text-gray-300 text-sm">Supports MP4, AVI, MOV formats</p>
             </div>
-
             {file && <ProgressBar progress={uploadProgress} />}
           </motion.div>
         </FloatingCard>
 
-        {results && !loading && (
-  <div className="mt-8 text-center text-white">
-    <motion.div
-      initial={{ scale: 0.9, opacity: 0 }}
-      animate={{ scale: 1, opacity: 1 }}
-      transition={{ duration: 0.5 }}
-    >
-      {results.classification === "Deepfake" ? (
-        <div className="flex justify-center items-center text-red-500">
-          <AlertCircle className="w-10 h-10 mr-2" />
-          <span>Deepfake Detected! Score: {results.prediction}</span>
-        </div>
-      ) : (
-        <div className="flex justify-center items-center text-green-500">
-          <CheckCircle className="w-10 h-10 mr-2" />
-          <span>Video is Authentic! Score: {results.prediction}</span>
-        </div>
-      )}
-      {/* Display plot image if available */}
-      {results.plotImage && (
-        <img
-          src={`data:image/png;base64,${results.plotImage}`}
-          alt="Analysis plot"
-          className="mt-4 mx-auto"
-        />
-      )}
-    </motion.div>
-  </div>
-)}
+        {loading && <p className="text-white text-center mt-4">Uploading...</p>}
+
+        {results && (
+          <div className="mt-8 text-center">
+            <h2 className="text-xl text-white mb-2">Results:</h2>
+            <p className={`text-3xl font-bold ${results.classification === 'deepfake' ? 'text-red-500' : 'text-green-500'}`}>
+              {results.classification === 'deepfake' ? <AlertCircle /> : <CheckCircle />}
+              {results.classification}
+            </p>
+            <p className="text-lg text-gray-300">Confidence: {results.prediction}</p>
+            {results.plotImage && (
+              <img src={`data:image/png;base64,${results.plotImage}`} alt="Analysis Plot" className="mt-4 rounded-lg" />
+            )}
+          </div>
+        )}
 
         {error && (
-          <div className="mt-8 text-center text-white">
-            <motion.div
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              transition={{ duration: 0.5 }}
-              className="flex justify-center items-center text-red-500"
-            >
-              <AlertCircle className="w-8 h-8 mr-2" />
-              <span>{error}</span>
-            </motion.div>
+          <div className="mt-4">
+            <p className="text-red-500 text-center">{error}</p>
           </div>
         )}
       </motion.div>
@@ -323,3 +284,4 @@ const DeepfakeDetector = () => {
 };
 
 export default DeepfakeDetector;
+
