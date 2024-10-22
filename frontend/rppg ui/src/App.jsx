@@ -2,9 +2,10 @@ import React from "react";
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 
 import './App.css';
-import FileUpload from "./components/fileupload";
-import Result from "./components/results";
+
 import DeepfakeDetector from "./components/fileupload";
+
+import Home from "./components/home";
 
 
 
@@ -15,7 +16,7 @@ function App() {
       <Routes>
          
         <Route path="/upload" element={<DeepfakeDetector />} />
-        <Route path="/result" element={<Result />} />
+        <Route path="/" element={<Home />} />
         
       </Routes>
     </Router>
@@ -23,3 +24,4 @@ function App() {
 }
 
 export default App;
+
